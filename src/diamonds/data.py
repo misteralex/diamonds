@@ -1,6 +1,9 @@
 import pandas as pd
 import seaborn as sns
-# Import other necessary libraries here
+from sklearn.impute import SimpleImputer, KNNImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.pipeline import Pipeline
 
 
 def load_data(cache = True) -> pd.DataFrame:
@@ -17,9 +20,9 @@ def load_data(cache = True) -> pd.DataFrame:
     pd.DataFrame
         The diamonds dataset
     """
-    diamonds = sns.load_dataset("diamonds")
-    print(f"Dataset loaded with {diamonds.shape[0]} rows and {diamonds.shape[1]} columns.")
-    return diamonds
+    df_diamonds = sns.load_dataset("diamonds")
+    print(f"Dataset loaded with {df_diamonds.shape[0]} rows and {df_diamonds.shape[1]} columns.")
+    return df_diamonds
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -36,6 +39,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         The cleaned diamonds dataset
     """
     filtered_df = df[df.all(axis=1)]
+    print(f"Dataset cleaned. {filtered_df.shape[0]} rows remaining after removing rows with missing values.")
     return filtered_df
 
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -52,7 +56,26 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         The preprocessed diamonds dataset
     """
-    pass
+    df_cat = df.select_dtypes(include="category")
+    cat_pipe = Pipeline(
+    [ ("cat_imp",SimpleImputer(strategy="most_frequent"))
+      ,("ohe",OneHotEncoder(drop="first",sparse_output=False))
+        ])
+    cat_pipe
+    num_pipe = Pipeline(
+    [("knn_imp", KNNImputer(n_neighbors=5))
+     ,("scaler", StandardScaler())
+      ])
+    num_pipe
+    
+    preprocessor = ColumnTransformer(
+    [("numeric",num_pipe, make_column_selector(dtype_include="number"))
+    ,("categorical", cat_pipe, make_column_selector(dtype_exclude="number"))
+      ]).set_output(transform="pandas")
+    preprocessor
+ 
+    print("Preprocessing data...")
+    return preprocessor
 
 def create_X_y(df: pd.DataFrame) ->tuple[pd.DataFrame, pd.Series]:
     """
@@ -75,5 +98,5 @@ def create_X_y(df: pd.DataFrame) ->tuple[pd.DataFrame, pd.Series]:
 if __name__ == "__main__":
     df = load_data()
     df_clean = clean_data(df)
-    # df_preprocessed = preprocess_data(df_clean)
+    df_preprocessed = preprocess_data(df_clean)
     # X, y = create_X_y(df_preprocessed)
