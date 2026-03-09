@@ -1,4 +1,5 @@
 import pandas as pd
+import seaborn as sns
 # Import other necessary libraries here
 
 
@@ -16,7 +17,9 @@ def load_data(cache = True) -> pd.DataFrame:
     pd.DataFrame
         The diamonds dataset
     """
-    pass
+    diamonds = sns.load_dataset("diamonds")
+    print(f"Dataset loaded with {diamonds.shape[0]} rows and {diamonds.shape[1]} columns.")
+    return diamonds
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -32,7 +35,8 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         The cleaned diamonds dataset
     """
-    pass
+    filtered_df = df[df.all(axis=1)]
+    return filtered_df
 
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -70,6 +74,6 @@ def create_X_y(df: pd.DataFrame) ->tuple[pd.DataFrame, pd.Series]:
 
 if __name__ == "__main__":
     df = load_data()
-    # df_clean = clean_data(df)
+    df_clean = clean_data(df)
     # df_preprocessed = preprocess_data(df_clean)
     # X, y = create_X_y(df_preprocessed)
