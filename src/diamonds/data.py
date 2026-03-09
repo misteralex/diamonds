@@ -1,4 +1,5 @@
 import pandas as pd
+import seaborn as sns
 # Import other necessary libraries here
 
 
@@ -16,6 +17,9 @@ def load_data(cache = True) -> pd.DataFrame:
     pd.DataFrame
         The diamonds dataset
     """
+    diamonds = sns.load_dataset("diamonds")
+    print(f"Dataset loaded with {diamonds.shape[0]} rows and {diamonds.shape[1]} columns.")
+    return diamonds
     pass
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
