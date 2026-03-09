@@ -4,6 +4,7 @@ from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer, make_column_selector
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 
 
 def load_data(cache = True) -> pd.DataFrame:
@@ -75,7 +76,7 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     preprocessor
  
     print("Preprocessing data...")
-    return preprocessor
+    return preprocessor.fit_transform(df)
 
 def create_X_y(df: pd.DataFrame) ->tuple[pd.DataFrame, pd.Series]:
     """
@@ -91,12 +92,16 @@ def create_X_y(df: pd.DataFrame) ->tuple[pd.DataFrame, pd.Series]:
     (pd.DataFrame, pd.Series)
         The feature matrix X and target vector y
     """
-    pass
-
-
+    X = df.drop(columns=["price"])
+    y = df["price"]
+    X_train, X_test, y_train, y_test  = train_test_split(X,y, random_state=42)
+    X = (X_train, X_test)
+    y = (y_train, y_test)
+    print(f"(X_train={X[0].shape}, X_test={X[1].shape}), (y_train={y[0].shape}, y_test={y[1].shape}) ")
+    return X, y
 
 if __name__ == "__main__":
     df = load_data()
     df_clean = clean_data(df)
     df_preprocessed = preprocess_data(df_clean)
-    # X, y = create_X_y(df_preprocessed)
+    X, y = create_X_y(df_clean)
