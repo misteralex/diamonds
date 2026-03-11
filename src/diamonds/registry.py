@@ -1,10 +1,10 @@
 import pickle 
 import os 
-import logoru
+import loguru
 from sklearn.base import BaseEstimator
 from diamonds.params import MODEL_PATH
 
-logger = logoru.Logoru("registry")
+logger = loguru.Loguru("registry")
 
 def save_model(estimator: BaseEstimator, name: str):
     """Save the model to the specified path."""
