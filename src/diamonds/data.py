@@ -1,11 +1,17 @@
 import pandas as pd
 import seaborn as sns
+import loguru
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer, make_column_selector
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 
+from diamonds.params import DATA_PATH
+from diamonds.model import create_preproc
+from diamonds.registry import save_model, load_model
+
+logger = loguru.logger
 
 def load_data(cache = True) -> pd.DataFrame:
     """
@@ -22,7 +28,7 @@ def load_data(cache = True) -> pd.DataFrame:
         The diamonds dataset
     """
     df_diamonds = sns.load_dataset("diamonds")
-    print(f"Dataset loaded with {df_diamonds.shape[0]} rows and {df_diamonds.shape[1]} columns.")
+    logger.info(f"Dataset loaded with {df_diamonds.shape[0]} rows and {df_diamonds.shape[1]} columns.")
     return df_diamonds
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -39,11 +45,12 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         The cleaned diamonds dataset
     """
-    filtered_df = df[df.all(axis=1)]
-    print(f"Dataset cleaned. {filtered_df.shape[0]} rows remaining after removing rows with missing values.")
-    return filtered_df
+    df_clean = df[df.all(axis=1)]
+    rows = len(df)
+    logger.info(f"Cleaned the diamonds dataset: {rows} rows -> {len(df_clean)} rows")
+    return df_clean
 
-def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
+def preprocess_data(X: pd.DataFrame, train: bool = True) -> pd.DataFrame:
     """
     Preprocess the diamonds dataset.
 
@@ -57,26 +64,16 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         The preprocessed diamonds dataset
     """
-    df_cat = df.select_dtypes(include="category")
-    cat_pipe = Pipeline(
-    [ ("cat_imp",SimpleImputer(strategy="most_frequent"))
-      ,("ohe",OneHotEncoder(drop="first",sparse_output=False))
-        ])
-    cat_pipe
-    num_pipe = Pipeline(
-    [("knn_imp", KNNImputer(n_neighbors=5))
-     ,("scaler", StandardScaler())
-      ])
-    num_pipe
-    
-    preprocessor = ColumnTransformer(
-    [("numeric",num_pipe, make_column_selector(dtype_include="number"))
-    ,("categorical", cat_pipe, make_column_selector(dtype_exclude="number"))
-      ]).set_output(transform="pandas")
-    preprocessor
- 
-    print("Preprocessing data...")
-    return preprocessor.fit_transform(df)
+    # Instantier la pipeline 
+    if train : 
+        preprocessor = create_preproc()
+        preprocessor.fit(X)
+        save_model(preprocessor, "preprocessor")
+    else :
+        preprocessor = load_model("preprocessor")
+    df_preprocessed = preprocessor.transform(X)
+    logger.info(f"Preprocessed the diamonds dataset: {X.shape} -> {df_preprocessed.shape}") 
+    return df_preprocessed
 
 def create_X_y(df: pd.DataFrame) ->tuple[pd.DataFrame, pd.Series]:
     """
@@ -97,11 +94,10 @@ def create_X_y(df: pd.DataFrame) ->tuple[pd.DataFrame, pd.Series]:
     X_train, X_test, y_train, y_test  = train_test_split(X,y, random_state=42)
     X = (X_train, X_test)
     y = (y_train, y_test)
-    print(f"(X_train={X[0].shape}, X_test={X[1].shape}), (y_train={y[0].shape}, y_test={y[1].shape}) ")
+    logger.info(f"(X_train={X[0].shape}, X_test={X[1].shape}), (y_train={y[0].shape}, y_test={y[1].shape}) ")
     return X, y
 
 if __name__ == "__main__":
     df = load_data()
     df_clean = clean_data(df)
-    df_preprocessed = preprocess_data(df_clean)
     X, y = create_X_y(df_clean)
